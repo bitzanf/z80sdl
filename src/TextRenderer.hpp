@@ -26,6 +26,12 @@ public:
     char& charAt(int line, int col);
     TextAttributes& attrAt(int line, int col);
 
+    void print(int line, int col, const std::string &str);
+    void print(int line, int col, const std::string &str, TextAttributes attr);
+
+    char* charBfrRaw();
+    TextAttributes* attrBfrRaw();
+
     void makeCharAtlas(const char* filepath);
     void render();
 

@@ -147,3 +147,24 @@ void TextRenderer::drawBitmap(FT_Bitmap bitmap, int x, int y) {
     SDL2pp::Surface bm { bitmap.buffer, (int)bitmap.width, (int)bitmap.rows, 8, bitmap.pitch, 0, 0, 0, 0 };
     bm.Blit(SDL2pp::NullOpt, textAtlas, dstrect);
 }
+
+char *TextRenderer::charBfrRaw() {
+    return textBuffer.data();
+}
+
+TextRenderer::TextAttributes *TextRenderer::attrBfrRaw() {
+    return attrBuffer.data();
+}
+
+void TextRenderer::print(int line, int col, const std::string &str) {
+    strncpy(&charAt(line, col), str.c_str(), std::min(str.length(), textBuffer.size() - (line * N_COLS + col)));
+}
+
+void TextRenderer::print(int line, int col, const std::string &str, TextRenderer::TextAttributes attr) {
+    print(line, col, str);
+    TextAttributes *attrBegin = &attrAt(line, col);
+    int length = std::min(str.length(), textBuffer.size() - (line * N_COLS + col));
+    for (int i = 0; i < length; i++) {
+        attrBegin[i] = attr;
+    }
+}

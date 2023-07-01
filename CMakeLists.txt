@@ -3,7 +3,7 @@ project(z80sdl)
 
 set(CMAKE_CXX_STANDARD 20)
 
-add_executable(z80sdl src/main.cpp src/FTRenderer.cpp src/FTRenderer.hpp src/FTWrapper.hpp src/FTWrapper.cpp src/Z80Computer.cpp src/Z80Computer.hpp src/Z80Computer.hpp src/z80.hpp src/TextRenderer.cpp src/TextRenderer.hpp)
+add_executable(z80sdl src/main.cpp src/FTWrapper.hpp src/FTWrapper.cpp src/Z80Computer.cpp src/Z80Computer.hpp src/Z80Computer.hpp src/z80.hpp src/TextRenderer.cpp src/TextRenderer.hpp)
 
 if(WIN32)
     # -DCMAKE_TOOLCHAIN_FILE=g:/dev/vcpkg/scripts/buildsystems/vcpkg.cmake
@@ -22,4 +22,4 @@ find_package(ICU COMPONENTS data uc i18n REQUIRED)
 target_link_libraries(z80sdl PRIVATE ICU::uc ICU::i18n ICU::data)
 
 find_package(fmt REQUIRED)
-target_link_libraries(z80sdl PRIVATE fmt::fmt)
+target_link_libraries(z80sdl PRIVATE fmt::fmt-header-only)
