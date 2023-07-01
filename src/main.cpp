@@ -310,13 +310,106 @@ int main_u3(int argc, char** argv) {
     return 0;
 }
 
+
+#include <unicode/ucnv.h>
+std::string UTF8Convert(const std::string &utf8txt) {
+    UErrorCode err = U_ZERO_ERROR;
+    auto detectFailure = [&err]{
+        if (U_FAILURE(err)) throw std::runtime_error(u_errorName(err));
+    };
+
+    UConverter *conv = ucnv_open("utf8", &err);
+    detectFailure();
+
+    std::wstring wstr;
+    wstr.resize(utf8txt.size());
+
+    int len = ucnv_toUChars(conv, reinterpret_cast<UChar *>(wstr.data()), wstr.size(), utf8txt.data(), utf8txt.size(), &err);
+    detectFailure();
+    wstr.resize(len);
+    ucnv_close(conv);
+
+    conv = ucnv_open("cp852", &err);
+    detectFailure();
+
+    std::string result;
+    result.resize(utf8txt.size());
+
+    len = ucnv_fromUChars(conv, result.data(), result.size(), reinterpret_cast<const UChar *>(wstr.c_str()), wstr.size(), &err);
+    detectFailure();
+    result.resize(len);
+
+    ucnv_close(conv);
+    return result;
+}
+
+void makeFancyShit(TextRenderer &renderer) {
+    //const char* cp852upper = "ÇüéâäůćçłëŐőîŹÄĆÉĹĺôöĽľŚśÖÜŤťŁ×čáíóúĄąŽžĘę¬źČş«»░▒▓│┤ÁÂĚŞ╣║╗╝Żż┐└┴┬├─┼Ăă╚╔╩╦╠═╬¤đĐĎËďŇÍÎě┘┌█▄ŢŮ▀ÓßÔŃńňŠšŔÚŕŰýÝţ´ ˝˛ˇ˘§÷¸°¨˙űŘř■ ";
+    std::string str1u8[] = {
+        "╔═══════╦───┤ CPU TEMP ├─────┐",
+        "║ 48 °C ║ ████████░░░░░░░░░░ │",
+        "╚═══════╩────────────────────┘"
+    };
+    std::string str1[3];
+    for (int i = 0; i < 3; i++) str1[i] = UTF8Convert(str1u8[i]);
+
+    strcpy(&renderer.charAt(4, 2), str1[0].c_str());
+    strcpy(&renderer.charAt(5, 2), str1[1].c_str());
+    strcpy(&renderer.charAt(6, 2), str1[2].c_str());
+
+    std::string str2u8[] = {
+        "╔═══════╦═══╣ GPU TEMP ╠═════╗",
+        "║ 85 °C ║ ███████████████    ║",
+        "╚═══════╩════════════════════╝"
+    };
+    std::string str2[3];
+    for (int i = 0; i < 3; i++) str2[i] = UTF8Convert(str2u8[i]);
+    /*for (int i = 0; i < 15; i++) str2[1][i+10] = 10;
+    for (int i = 0; i < 3; i++) str2[1][i+25] = 9;*/
+
+    strcpy(&renderer.charAt(4, 41), str2[0].c_str());
+    strcpy(&renderer.charAt(5, 41), str2[1].c_str());
+    strcpy(&renderer.charAt(6, 41), str2[2].c_str());
+
+    std::string str3u8[] = {
+        "┌───────╦═══╣ WATER TEMP ╠═══╗",
+        "│ 37 °C ║ ██████             ║",
+        "└───────╩════════════════════╝"
+    };
+    std::string str3[3];
+    for (int i = 0; i < 3; i++) str3[i] = UTF8Convert(str3u8[i]);
+
+    strcpy(&renderer.charAt(8, 2), str3[0].c_str());
+    strcpy(&renderer.charAt(9, 2), str3[1].c_str());
+    strcpy(&renderer.charAt(10, 2), str3[2].c_str());
+
+    std::string str4u8[] = {
+        "┌───────┬───┤ FAN SPEED ├────┐",
+        "│ 1337  │ █████████          │",
+        "└───────┴────────────────────┘"
+    };
+    std::string str4[3];
+    for (int i = 0; i < 3; i++) str4[i] = UTF8Convert(str4u8[i]);
+
+    strcpy(&renderer.charAt(8, 41), str4[0].c_str());
+    strcpy(&renderer.charAt(9, 41), str4[1].c_str());
+    strcpy(&renderer.charAt(10, 41), str4[2].c_str());
+
+    for (int i = 0; i < 18; i++) {
+        renderer.attrAt(5, i+12).as_byte = 0b00000001;
+        renderer.attrAt(5, i+51).as_byte = 0b00000100;
+        renderer.attrAt(9, i+12).as_byte = 0b00000010;
+        renderer.attrAt(9, i+51).as_byte = 0b00001110;
+    }
+}
+
 int main_u(int argc, char** argv) {
     SDL sdl(SDL_INIT_VIDEO);
 
     Window window(
         "z80sdl",
         SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED,
-        640, 480,
+        TextRenderer::WIN_W, TextRenderer::WIN_H,
         SDL_WINDOW_SHOWN
     );
     Renderer sdlRenderer(
@@ -332,31 +425,45 @@ int main_u(int argc, char** argv) {
     textRenderer.makeCharAtlas(FONT_FILE);
 
     int bufferSize = TextRenderer::N_LINES * TextRenderer::N_COLS;
-    memset(&textRenderer.charAt(0, 0), 0, bufferSize);
+    //memset(&textRenderer.charAt(0, 0), '.', bufferSize);
     strcpy(&textRenderer.charAt(1, 1), "ahoj svete");
     strcpy(&textRenderer.charAt(0, 0), "Microsoft Windows [Version 10.0.19044.2846]");
     memset(&textRenderer.attrAt(0, 0), 0b111, bufferSize);
+    //memset(&textRenderer.attrAt(0, 0), 0x67, bufferSize);
     textRenderer.attrAt(1, 1).fgcolor = 0b1111;
     textRenderer.attrAt(1, 2).as_byte = 0b01001101;
     textRenderer.attrAt(1, 4).as_byte = 0b10101111;
-    strcpy(&textRenderer.charAt(29, 0), "meow meow");
-    textRenderer.attrAt(29, 79).bgcolor = 6;
+    strcpy(&textRenderer.charAt(-1, 0), "meow meow");
+    textRenderer.attrAt(-1, -1).bgcolor = 6;
     textRenderer.attrAt(0, 0).bgcolor = 6;
 
-    auto bfr = &textRenderer.charAt(10, 0);
+    auto bfr = &textRenderer.charAt(20, 0);
     for (int i = 0; i < 256; i++) bfr[i] = i;
 
-    bfr = &textRenderer.charAt(20, 0);
-    auto abfr = &textRenderer.attrAt(20, 0);
+    bfr = &textRenderer.charAt(30, 0);
+    auto abfr = &textRenderer.attrAt(30, 0);
     for (int i = 0; i < 256; i++) {
         bfr[i] = i;
         abfr[i].bgcolor = 0b1100;
         abfr[i].fgcolor = 0b1111;
     }
 
+    for (int i = 15; i <= 17; i++) {
+        for (int j = 5; j <= 7; j++) {
+            textRenderer.charAt(i, j) = 0xB0;
+            textRenderer.attrAt(i, j).as_byte = 0b10011111;
+        }
+    }
+
     for (int i = 0; i < 8; i++) {
         strcpy(&textRenderer.charAt(2, i * 10), "012345678 ");
     }
+
+    makeFancyShit(textRenderer);
+
+    sdlRenderer.SetDrawColor(0, 0, 0);
+    sdlRenderer.Clear();
+    textRenderer.render();
 
     while (true) {
         auto startTime = steady_clock::now();
@@ -378,9 +485,7 @@ int main_u(int argc, char** argv) {
             }
         }
 
-        sdlRenderer.SetDrawColor(0, 0, 0);
-        sdlRenderer.Clear();
-        textRenderer.render();
+        sdlRenderer.Present();
 
         auto stopTime = steady_clock::now();
         auto elapsedTime = duration_cast<milliseconds>(stopTime - startTime).count();

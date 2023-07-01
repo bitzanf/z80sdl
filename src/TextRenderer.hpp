@@ -30,11 +30,11 @@ public:
     void render();
 
     static constexpr int
-        WIN_W = 640, WIN_H = 480,
-        N_LINES = 30, N_COLS = 80;
+        WIN_W = 792, WIN_H = 588,
+        N_LINES = 42, N_COLS = 88;
 
 private:
-    static int atlasPosition(char c);
+    static int atlasPosition(uint8_t c);
     static std::u32string codepageConvert();
     void drawChar(ftpp::FTFace &font, char32_t c, int x);
     void drawBitmap(FT_Bitmap bitmap, int x, int y);
@@ -48,10 +48,11 @@ private:
     SDL2pp::Texture fbTex;
 
     SDL_Color colorPalette[16];
+    SDL_Color *surfacePalette;
 
     static constexpr int
-        FONT_W = 8, FONT_H = 16,
-        LINE_H = 16;
+        FONT_W = 9, FONT_H = 14,
+        FONT_SIZE = 16, N_COLORS = 256;
     static constexpr const char* CODEPAGE = "cp852";
 };
 
