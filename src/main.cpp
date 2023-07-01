@@ -3,6 +3,7 @@
 
 #define SDL_MAIN_HANDLED
 #include "FTRenderer.hpp"
+#include "TextRenderer.hpp"
 #include "Z80Computer.hpp"
 
 #include <chrono>
@@ -98,13 +99,13 @@ int main_u2(int argc, char** argv) {
 
         Texture texts[2] = {
         Texture{ renderer, font.RenderText_Shaded(
-            fmt::format(" frame: {} ", frameCounter),
+            /*fmt::format(" frame: {} ", frameCounter),*/ " frame: ((linker error))",
             SDL_Color{ 0xff, 0xff, 0x00, 0xff},
             SDL_Color{ 0, 0, 0, 0xff})
             },
         Texture{
             renderer,font.RenderText_Shaded(
-                fmt::format(" elapsed time: {:.2f} ",duration_cast<duration<float>>(stopTime - loopStartTime).count()),
+                /*fmt::format(" elapsed time: {:.2f} ",duration_cast<duration<float>>(stopTime - loopStartTime).count()),*/ " elapsed time: ((linker error))",
                 SDL_Color{ 0xff, 0xff, 0x00, 0xff},
                 SDL_Color{ 0, 0, 0, 0xff})
             }
@@ -153,7 +154,7 @@ int redrawHandler(void *data, SDL_Event *event) {
     return 0;
 }
 
-int main_u(int argc, char** argv) {
+int main_u3(int argc, char** argv) {
     SDL sdl(SDL_INIT_VIDEO);
 
     Window window(
@@ -300,6 +301,86 @@ int main_u(int argc, char** argv) {
         ftRenderer.render();
         ftRenderer.present();
         sdlRenderer.Present();
+
+        auto stopTime = steady_clock::now();
+        auto elapsedTime = duration_cast<milliseconds>(stopTime - startTime).count();
+        if (elapsedTime < msPerFrame) SDL_Delay(msPerFrame - elapsedTime);
+    }
+    konec:
+    return 0;
+}
+
+int main_u(int argc, char** argv) {
+    SDL sdl(SDL_INIT_VIDEO);
+
+    Window window(
+        "z80sdl",
+        SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED,
+        640, 480,
+        SDL_WINDOW_SHOWN
+    );
+    Renderer sdlRenderer(
+        window,
+        -1,
+        SDL_RENDERER_ACCELERATED
+    );
+    TextRenderer textRenderer(sdlRenderer.Get());
+
+    sdlRenderer.SetDrawColor(0, 0, 0);
+    window.SetMinimumSize(TextRenderer::WIN_W, TextRenderer::WIN_H);
+
+    textRenderer.makeCharAtlas(FONT_FILE);
+
+    int bufferSize = TextRenderer::N_LINES * TextRenderer::N_COLS;
+    memset(&textRenderer.charAt(0, 0), 0, bufferSize);
+    strcpy(&textRenderer.charAt(1, 1), "ahoj svete");
+    strcpy(&textRenderer.charAt(0, 0), "Microsoft Windows [Version 10.0.19044.2846]");
+    memset(&textRenderer.attrAt(0, 0), 0b111, bufferSize);
+    textRenderer.attrAt(1, 1).fgcolor = 0b1111;
+    textRenderer.attrAt(1, 2).as_byte = 0b01001101;
+    textRenderer.attrAt(1, 4).as_byte = 0b10101111;
+    strcpy(&textRenderer.charAt(29, 0), "meow meow");
+    textRenderer.attrAt(29, 79).bgcolor = 6;
+    textRenderer.attrAt(0, 0).bgcolor = 6;
+
+    auto bfr = &textRenderer.charAt(10, 0);
+    for (int i = 0; i < 256; i++) bfr[i] = i;
+
+    bfr = &textRenderer.charAt(20, 0);
+    auto abfr = &textRenderer.attrAt(20, 0);
+    for (int i = 0; i < 256; i++) {
+        bfr[i] = i;
+        abfr[i].bgcolor = 0b1100;
+        abfr[i].fgcolor = 0b1111;
+    }
+
+    for (int i = 0; i < 8; i++) {
+        strcpy(&textRenderer.charAt(2, i * 10), "012345678 ");
+    }
+
+    while (true) {
+        auto startTime = steady_clock::now();
+        SDL_Event event;
+        while (SDL_PollEvent(&event)) {
+            switch (event.type) {
+                case SDL_QUIT:
+                    goto konec;
+                case SDL_KEYDOWN:
+                    switch (event.key.keysym.sym) {
+                        case SDLK_ESCAPE:
+                        case SDLK_q:
+                            goto konec;
+                        case SDLK_r:
+                            window.SetSize(640, 480);
+                            break;
+                    }
+                    break;
+            }
+        }
+
+        sdlRenderer.SetDrawColor(0, 0, 0);
+        sdlRenderer.Clear();
+        textRenderer.render();
 
         auto stopTime = steady_clock::now();
         auto elapsedTime = duration_cast<milliseconds>(stopTime - startTime).count();

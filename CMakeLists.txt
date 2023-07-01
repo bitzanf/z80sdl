@@ -3,7 +3,7 @@ project(z80sdl)
 
 set(CMAKE_CXX_STANDARD 20)
 
-add_executable(z80sdl src/main.cpp src/FTRenderer.cpp src/FTRenderer.hpp src/FTWrapper.hpp src/FTWrapper.cpp src/Z80Computer.cpp src/Z80Computer.hpp src/Z80Computer.hpp src/z80.hpp)
+add_executable(z80sdl src/main.cpp src/FTRenderer.cpp src/FTRenderer.hpp src/FTWrapper.hpp src/FTWrapper.cpp src/Z80Computer.cpp src/Z80Computer.hpp src/Z80Computer.hpp src/z80.hpp src/TextRenderer.cpp src/TextRenderer.hpp)
 
 if(WIN32)
     # -DCMAKE_TOOLCHAIN_FILE=g:/dev/vcpkg/scripts/buildsystems/vcpkg.cmake
