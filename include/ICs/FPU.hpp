@@ -6,7 +6,7 @@
 #define Z80SDL_FPU_HPP
 
 #include <cstdint>
-#include "fpm/fixed.hpp"    //https://github.com/MikeLankamp/fpm
+#include "fpm/fixed.hpp"
 
 /*
  * ---- OPCODES ----

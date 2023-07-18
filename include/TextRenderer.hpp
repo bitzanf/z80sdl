@@ -51,6 +51,8 @@ private:
     void drawBitmap(FT_Bitmap bitmap, int x, int y);
     void renderChar(char c, int row, int col, TextAttributes attr);
 
+    static SDL_Color interpolateColor(SDL_Color from, SDL_Color to, float percent);
+
     std::vector<char> textBuffer;
     std::vector<TextAttributes> attrBuffer;
 

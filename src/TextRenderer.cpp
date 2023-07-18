@@ -132,8 +132,32 @@ void TextRenderer::present() {
 }
 
 void TextRenderer::renderChar(char c, int row, int col, TextRenderer::TextAttributes attr) {
-    //SDL_Color colors[2] { colorPalette[attr.bgcolor], colorPalette[attr.fgcolor] };
+#if 1
+    auto atlasPX = (uint8_t*)textAtlas.Get()->pixels;
+    auto fbPX = (uint32_t*)frameBuffer.Get()->pixels;
 
+    static const size_t c_fb_pxPerLine = FONT_W * N_COLS;
+    static const size_t c_fb_pxPerCharRow = FONT_H * c_fb_pxPerLine;
+    static const size_t c_ta_pxPerLine = FONT_W * 256;
+
+    const size_t c_fb_charRowOffset = row * c_fb_pxPerCharRow;
+    const size_t c_fb_charColOffset = col * FONT_W;
+    const size_t c_fb_offset = c_fb_charRowOffset + c_fb_charColOffset;
+    const int c_ta_hpos = atlasPosition(c);
+    //SDL_PixelFormat const* format = frameBuffer.Get()->format;
+
+    size_t idx;
+    for (int i = 0; i < FONT_H; i++) {
+        for (int j = 0; j < FONT_W; j++) {
+            idx = c_ta_hpos + j + i * c_ta_pxPerLine;
+            SDL_Color color = interpolateColor(colorPalette[attr.bgcolor], colorPalette[attr.fgcolor], atlasPX[idx]/255.0f);
+
+            idx = c_fb_offset + i * c_fb_pxPerLine + j;
+            //fbPX[idx] = SDL_MapRGBA(format, color.r, color.g, color.b, color.a);
+            fbPX[idx] = (color.r << 24) | (color.g << 16) | (color.b << 8) | (color.a);
+        }
+    }
+#else
     /* ---- HNUS ---- */
     surfacePalette[0] = colorPalette[attr.bgcolor];
     surfacePalette[255] = colorPalette[attr.fgcolor];
@@ -143,6 +167,7 @@ void TextRenderer::renderChar(char c, int row, int col, TextRenderer::TextAttrib
     SDL2pp::Rect fbPos{ col * FONT_W, row * FONT_H, FONT_W, FONT_H };
 
     textAtlas.Blit(SDL2pp::Rect{ atlasPosition(c), 0, FONT_W, FONT_H }, frameBuffer, fbPos);
+#endif
 }
 
 void TextRenderer::drawBitmap(FT_Bitmap bitmap, int x, int y) {
@@ -174,4 +199,16 @@ void TextRenderer::print(int line, int col, const std::string &str, TextRenderer
     for (size_t i = 0; i < length; i++) {
         attrBegin[i] = attr;
     }
+}
+
+SDL_Color TextRenderer::interpolateColor(SDL_Color from, SDL_Color to, float percent) {
+    // c = a + (b - a) * t
+    SDL_Color out;
+
+    out.r = from.r + (to.r - from.r) * percent;
+    out.g = from.g + (to.g - from.g) * percent;
+    out.b = from.b + (to.b - from.b) * percent;
+    out.a = from.a + (to.a - from.a) * percent;
+
+    return out;
 }

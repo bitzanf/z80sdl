@@ -5,8 +5,7 @@
 #include <ft2build.h>
 #include FT_FREETYPE_H
 #include <unicode/ucnv.h>
-
-#define SDL_MAIN_HANDLED
+#include <SDL.h>
 #include "TextRenderer.hpp"
 #include "Z80Computer.hpp"
 
@@ -20,42 +19,57 @@ using std::string;
 const int FPS = 20;
 const int msPerFrame = 1000 / FPS;
 
-string UTF8Convert(const string &utf8txt) {
-    UErrorCode err = U_ZERO_ERROR;
-    auto detectFailure = [&err]{
+class UTF8_CP852_Converter {
+public:
+    UTF8_CP852_Converter() {
+        err = U_ZERO_ERROR;
+
+        from_utf8 = ucnv_open("utf8", &err);
+        detectFailure();
+
+        to_cp852 = ucnv_open("cp852", &err);
+        detectFailure();
+    }
+
+    ~UTF8_CP852_Converter() {
+        ucnv_close(from_utf8);
+        ucnv_close(to_cp852);
+    }
+
+    string operator()(const string& text) {
+        std::wstring wstr;
+        wstr.resize(text.size());
+
+        int len = ucnv_toUChars(from_utf8, reinterpret_cast<UChar *>(wstr.data()), wstr.size(), text.data(), text.size(), &err);
+        detectFailure();
+        wstr.resize(len);
+
+        string result;
+        result.resize(text.size());
+
+        len = ucnv_fromUChars(to_cp852, result.data(), result.size(), reinterpret_cast<const UChar *>(wstr.c_str()), wstr.size(), &err);
+        detectFailure();
+        result.resize(len);
+
+        return result;
+    }
+
+private:
+    void detectFailure() {
         if (U_FAILURE(err)) throw std::runtime_error(u_errorName(err));
     };
 
-    UConverter *conv = ucnv_open("utf8", &err);
-    detectFailure();
+    UConverter *from_utf8, *to_cp852;
+    UErrorCode err;
 
-    std::wstring wstr;
-    wstr.resize(utf8txt.size());
-
-    int len = ucnv_toUChars(conv, reinterpret_cast<UChar *>(wstr.data()), wstr.size(), utf8txt.data(), utf8txt.size(), &err);
-    detectFailure();
-    wstr.resize(len);
-    ucnv_close(conv);
-
-    conv = ucnv_open("cp852", &err);
-    detectFailure();
-
-    string result;
-    result.resize(utf8txt.size());
-
-    len = ucnv_fromUChars(conv, result.data(), result.size(), reinterpret_cast<const UChar *>(wstr.c_str()), wstr.size(), &err);
-    detectFailure();
-    result.resize(len);
-
-    ucnv_close(conv);
-    return result;
-}
+};
+UTF8_CP852_Converter converter;
 
 template <size_t N>
 void renderStrArray(TextRenderer &renderer, int row, int col, const string strings[N], TextRenderer::TextAttributes attrs) {
     string converted;
     for (int i = 0; i < N; i++) {
-        converted = UTF8Convert(strings[i]);
+        converted = converter(strings[i]);
         strcpy(&renderer.charAt(row + i, col), converted.c_str());
         for (int j = 0; j < converted.length(); j++) {
             renderer.attrAt(row + i, col + j) = attrs;
@@ -69,7 +83,7 @@ size_t utf8length(const char* str) {
     while (*str) len += (*str++ & 0xc0) != 0x80;
     return len;
 }
-size_t utf8length(const std::string& str) { return utf8length(str.c_str()); }
+size_t utf8length(const string& str) { return utf8length(str.c_str()); }
 
 int nDigits10IntegerPart(float num) {
     if (num >= 1000) return floor(log10f(num)) + 1;
@@ -96,9 +110,8 @@ Gauge(TextRenderer &renderer, int row, int col, const string &label, const strin
     const float step = range / (gradeTicks + 1);
 
     string sLabel = "┤ " + label + " ├";
-    string sValue = fmt::format("{:.{}g}", value, precision + nDigits10IntegerPart(value));
+    string sValue = fmt::format("{:.{}g}{}", value, precision + nDigits10IntegerPart(value), unit);
 
-    sValue += unit;
     const int valueLength = utf8length(sValue) + 2;
     const int fillLength = fill * 20;
 
@@ -176,7 +189,7 @@ Gauge(TextRenderer &renderer, int row, int col, const string &label, const strin
 }
 
 void Indicator(TextRenderer &renderer, int row, int col, const string& label, TextRenderer::TextAttributes attrs) {
-    string labelConverted = UTF8Convert(label);
+    string labelConverted = converter(label);
     int sep = labelConverted.find('\n');
     std::string_view lines[] = {
         {labelConverted.begin(), labelConverted.begin() + sep},
@@ -189,184 +202,44 @@ void Indicator(TextRenderer &renderer, int row, int col, const string& label, Te
     }
 }
 
-void makeFancyShit(TextRenderer &renderer) {
-    //const char* cp852upper = "ÇüéâäůćçłëŐőîŹÄĆÉĹĺôöĽľŚśÖÜŤťŁ×čáíóúĄąŽžĘę¬źČş«»░▒▓│┤ÁÂĚŞ╣║╗╝Żż┐└┴┬├─┼Ăă╚╔╩╦╠═╬¤đĐĎËďŇÍÎě┘┌█▄ŢŮ▀ÓßÔŃńňŠšŔÚŕŰýÝţ´ ˝˛ˇ˘§÷¸°¨˙űŘř■ ";
-    string str1u8[] = {
-        "╔═══════╦───┤ CPU TEMP ├─────┐",
-        "║ 48 °C ║ ████████░░░░░░░░░░ │",
-        "╚═══════╩────────────────────┘"
-    };
-    string str1[3];
-    for (int i = 0; i < 3; i++) str1[i] = UTF8Convert(str1u8[i]);
-
-    strcpy(&renderer.charAt(4, 2), str1[0].c_str());
-    strcpy(&renderer.charAt(5, 2), str1[1].c_str());
-    strcpy(&renderer.charAt(6, 2), str1[2].c_str());
-
-    string str2u8[] = {
-        "╔═══════╦═══╣ GPU TEMP ╠═════╗",
-        //"║ 85 °C ║ ███████████████    ║",
-        "║ 85 °C ║ ███████████████░░░ ║",
-        "╚═══════╩════════════════════╝"
-    };
-    string str2[3];
-    for (int i = 0; i < 3; i++) str2[i] = UTF8Convert(str2u8[i]);
-    /*for (int i = 0; i < 15; i++) str2[1][i+10] = 10;
-    for (int i = 0; i < 3; i++) str2[1][i+25] = 9;*/
-
-    strcpy(&renderer.charAt(4, 41), str2[0].c_str());
-    strcpy(&renderer.charAt(5, 41), str2[1].c_str());
-    strcpy(&renderer.charAt(6, 41), str2[2].c_str());
-
-    string str3u8[] = {
-        "┌───────╦═══╣ WATER TEMP ╠═══╗",
-        //"│ 37 °C ║ ██████             ║",
-        "│ 37 °C ║ ██████░░░░░░░░░░░░ ║",
-        "└───────╩════════════════════╝"
-    };
-    string str3[3];
-    for (int i = 0; i < 3; i++) str3[i] = UTF8Convert(str3u8[i]);
-
-    strcpy(&renderer.charAt(8, 2), str3[0].c_str());
-    strcpy(&renderer.charAt(9, 2), str3[1].c_str());
-    strcpy(&renderer.charAt(10, 2), str3[2].c_str());
-
-    string str4u8[] = {
-        "┌───────┬───┤ FAN SPEED ├────┐",
-        //"│ 1337  │ █████████          │",
-        "│ 1337  │ █████████░░░░░░░░░ │",
-        "└───────┴────────────────────┘"
-    };
-    string str4[3];
-    for (int i = 0; i < 3; i++) str4[i] = UTF8Convert(str4u8[i]);
-
-    strcpy(&renderer.charAt(8, 41), str4[0].c_str());
-    strcpy(&renderer.charAt(9, 41), str4[1].c_str());
-    strcpy(&renderer.charAt(10, 41), str4[2].c_str());
-
-    for (int i = 0; i < 18; i++) {
-        renderer.attrAt(5, i+12).as_byte = 0b00000001;
-        renderer.attrAt(5, i+51).as_byte = 0b00000100;
-        renderer.attrAt(9, i+12).as_byte = 0b00000010;
-        renderer.attrAt(9, i+51).as_byte = 0b00001110;
-    }
-
-    string str5u8[] = {
-        "        ",
-        " PUMP 1 ",
-        "        "
-    };
-    string str5[3];
-    for (int i = 0; i < 3; i++) str5[i] = UTF8Convert(str5u8[i]);
-
-    for (int i = 0; i < 3; i++) {
-        strcpy(&renderer.charAt(13 + i, 20), str5[i].c_str());
-        for (int j = 0; j < str5[i].length(); j++) {
-            auto& attr = renderer.attrAt(13 + i, 20 + j);
-            //attr.fgcolor = 0;
-            //attr.bgcolor = 0b0111;
-            attr.fgcolor = 0b0111;
-            attr.bgcolor = 0;
-        }
-    }
-
-    string str6u8[] = {
-        "        ",
-        " PUMP 2 ",
-        "        "
-    };
-    string str6[3];
-    for (int i = 0; i < 3; i++) str6[i] = UTF8Convert(str6u8[i]);
-
-    for (int i = 0; i < 3; i++) {
-        strcpy(&renderer.charAt(13 + i, 30), str6[i].c_str());
-        for (int j = 0; j < str6[i].length(); j++) {
-            auto& attr = renderer.attrAt(13 + i, 30 + j);
-            attr.fgcolor = 0;
-            attr.bgcolor = 0b1010;
-        }
-    }
-
-    string str7u8[] = {
-        " PWR  ",
-        " GOOD "
-    };
-    renderStrArray<2>(renderer, 13, 40, str7u8, 0b11000000);
-
-    string str8[] = {
-        "┌───────┬─────┤ CPU TEMP ├─────┐",
-        "│ 46 °C │ ███████              │",
-        "└───────┴─┬───┬───┬───┬───┬───┬┘",
-        "          20  35  50  65  80  95 ",
-        "",
-        "┌───────┬─────┤ GPU TEMP ├─────┐",
-        "│ 80 °C │ █████████████████    │",
-        "└───────┴─┬───┬───┬───┬───┬───┬┘",
-        "          20  35  50  65  80  95 ",
-    };
-    renderStrArray<9>(renderer, 19, 2, str8, 0b00000111);
-    for (int i = 12; i <= 31; i++) {
-        renderer.attrAt(20, i).fgcolor = 0b0010;
-        renderer.attrAt(25, i).fgcolor = 0b0100;
-    }
-
-    /*string str9[] = {
-        "┌┤ CPU ├┬──────────────────────┐",
-        "│ 46 °C │ ███████              │",
-        "└───────┴─┬───┬───┬───┬───┬───┬┘",
-        "         20  35  50  65  80  95",
-        "┌┤ GPU ├┬─┴───┴───┴───┴───┴───┴┐",
-        "│ 80 °C │ █████████████████    │",
-        "└───────┴──────────────────────┘",
-    };
-    renderStrArray<7>(renderer, 19, 40, str9, TextRenderer::TextAttributes{.as_byte = 0b00000111});
-    for (int i = 50; i <= 70; i++) {
-        renderer.attrAt(20, i).fgcolor = 0b0010;
-        renderer.attrAt(24, i).fgcolor = 0b0100;
-    }*/
-
-    Gauge(renderer, 19, 40, "CPU TEMP", "°C", 20, 95, 46, 0, 4, 0b0010);
-    Gauge(renderer, 24, 40, "12V POWER", " V", 11, 13, 12.35, 0, 2, 0b0010);
-    Indicator(renderer, 13, 48, "COMP\nON", 0b10100000);
-}
-
-bool g_hasUART = false;
+bool g_hasUART = false, g_UIRedraw = true;
 
 void drawUART(TextRenderer &renderer) {
-    using df = duration<float>;
+    /*using df = duration<float>;
 
     static auto time_start = steady_clock::now();
     static bool isHBLit = false;
 
-    if (!g_hasUART) {
-        isHBLit = false;
-        renderer.print(-1, 0, UTF8Convert(" RS232 "), 0b01001111);
-        renderer.print(-1, 7, UTF8Convert("■"), 0b00010111);
-    } else {
-        auto rs232pos = &renderer.attrAt(-1, 0);
-        for (int i = 0; i < 7; i++) rs232pos[i].bgcolor = 0b0010;
+    auto& hbpos = renderer.attrAt(-1, 7);*/
+    auto rs232pos = &renderer.attrAt(-1, 0);
 
-        auto& hbpos = renderer.attrAt(-1, 7);
-        auto now = steady_clock::now();
-        df s = now - time_start;
+    if (!g_hasUART) {
+        //isHBLit = false;
+        for (int i = 0; i < 7; i++) rs232pos[i].bgcolor = 0b0100;
+        //hbpos.fgcolor = 0x7;
+    } else {
+        //auto now = steady_clock::now();
+        for (int i = 0; i < 7; i++) rs232pos[i].bgcolor = 0b0010;
+        /*df s = now - time_start;
         if (s.count() > 1) {
             time_start = now;
             if (isHBLit) hbpos.fgcolor = 0xf;
             else hbpos.fgcolor = 0x7;
             isHBLit = !isHBLit;
-        }
+            g_UIRedraw = true;
+        }*/
     }
 }
 
 void drawUI(TextRenderer &renderer) {
     renderer.print(0, 0, fmt::format("{:<{}}", "", TextRenderer::N_COLS), 0b00011111);
-    renderer.print(0, 0, UTF8Convert(" Základní obrazovka "), 0b10011111);
-    renderer.print(0, 20, UTF8Convert("│ Napájení │ Zatížení PC │ Intel PCM"));
+    renderer.print(0, 0, converter(" Základní obrazovka "), 0b10011111);
+    renderer.print(0, 20, converter("│ Napájení │ Zatížení PC │ Intel PCM"));
 
     {
         char* line1c = &renderer.charAt(0, 0);
         TextRenderer::TextAttributes* line1a = &renderer.attrAt(0, 0);
-        char sep = UTF8Convert("│")[0];
+        char sep = converter("│")[0];
         for (int i = 0; i < TextRenderer::N_COLS; i++) {
             if (line1c[i] == sep) line1a[i].fgcolor = 0b0111;
         }
@@ -379,18 +252,16 @@ void drawUI(TextRenderer &renderer) {
     Gauge(renderer, 7, 40, "PRŮTOK GPU", " l/m", 0, 10, 6, 0, 4, 0b0010);
     Gauge(renderer, 12, 40, "VENTILÁTOR", "", 0, 3000, 1337, 0, 1, 0b0010);
 
-    renderer.print(18, 0, UTF8Convert(fmt::format("{:<{}}", "", TextRenderer::N_COLS)), 0b00010111);
+    renderer.print(18, 0, converter(fmt::format("{:<{}}", "", TextRenderer::N_COLS)), 0b00010111);
 
     Indicator(renderer, 20, 2, "PC\nZAP", 0b11000000);
     Indicator(renderer, 20, 10, "ČERP\n1", 0b10100000);
     Indicator(renderer, 20, 18, "ČERP\n2", 0b00000111/*0b01110000*/);
     Indicator(renderer, 20, 26, "PWR\nGOOD", 0b10100000);
 
-    renderer.print(20, 40, "        ", 0b10100000);
-    renderer.print(21, 40, UTF8Convert(" ČERP 1 "), 0b10100000);
-    renderer.print(22, 40, "        ", 0b10100000);
-
-    renderer.print(-1, 8, fmt::format("{:<{}}", "", TextRenderer::N_COLS-8), 0b00011111);
+    renderer.print(-1, 0, fmt::format("{:<{}}", "", TextRenderer::N_COLS), 0b00011111);
+    renderer.print(-1, 0, converter(" RS232 "), 0b01001111);
+    //renderer.print(-1, 7, converter("■"), 0b00010111);
 
     drawUART(renderer);
 }
@@ -419,11 +290,6 @@ int main_u(int argc, char** argv) {
     int bufferSize = TextRenderer::N_LINES * TextRenderer::N_COLS;
     memset(&textRenderer.attrAt(0, 0), 0b111, bufferSize);
 
-    drawUI(textRenderer);
-
-    sdlRenderer.Clear();
-    textRenderer.render();
-
     while (true) {
         auto startTime = steady_clock::now();
         SDL_Event event;
@@ -441,6 +307,7 @@ int main_u(int argc, char** argv) {
                             break;
                         case SDLK_SPACE:
                             g_hasUART = !g_hasUART;
+                            g_UIRedraw = true;
                             break;
                     }
                     break;
@@ -448,8 +315,11 @@ int main_u(int argc, char** argv) {
         }
 
         drawUI(textRenderer);
-        textRenderer.render();
-        //textRenderer.present();
+        if (g_UIRedraw) {
+            textRenderer.render();
+            g_UIRedraw = false;
+        } else textRenderer.present();
+
         sdlRenderer.Present();
 
         auto stopTime = steady_clock::now();

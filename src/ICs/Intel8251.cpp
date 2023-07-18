@@ -3,7 +3,6 @@
 //
 
 #include "ICs/Intel8251.hpp"
-#include <exception>
 #include <cstring>
 
 // WRITE 3 '0x00' VALUES AS INSTRUCTION AFTER INITIAL POWER-UP
@@ -46,14 +45,16 @@ uint8_t Intel8251::getStatus() {
 }
 
 void Intel8251::transmit(uint8_t data) {
-    status.txReady = false;
-    mount << (char)data;
-    if (commandRegister.txEnable) status.txReady = true;
+    if (commandRegister.txEnable) {
+        status.txReady = false;
+        mount << (char)data;
+        status.txReady = true;
+    }
 }
 
 uint8_t Intel8251::receive() {
-    char c;
-    mount >> c;
+    char c = 0;
+    if (commandRegister.rxEnable) mount >> c;
     return c;
 }
 

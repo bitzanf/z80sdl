@@ -57,7 +57,7 @@ void Z80Computer::setVideoRAM(uint8_t *text, uint8_t *attr, uint16_t size) {
 }
 
 uint8_t *Z80Computer::addr2ptr(uint16_t addr) {
-    if (addr >= 0x0000 && addr < 0x8000) return &ROM[addr];
+    if (addr < 0x8000) return &ROM[addr];
     if (addr >= 0x8000 && addr < 0x8000 + videoRAMSize) return &videoTextRAM[addr - 0x8000];
     if (addr >= 0x9000 && addr < 0x9000 + videoRAMSize) return &videoAttrRAM[addr - 0x9000];
     if (addr >= 0xA000) return &RAM[addr - 0xA000];
