@@ -4,3 +4,9 @@
 [submodule "extern/fpm"]
 	path = extern/fpm
 	url = https://github.com/MikeLankamp/fpm.git
+[submodule "extern/fmt"]
+	path = extern/fmt
+	url = https://github.com/fmtlib/fmt.git
+[submodule "extern/CLI11"]
+	path = extern/CLI11
+	url = https://github.com/CLIUtils/CLI11.git

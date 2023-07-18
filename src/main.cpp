@@ -8,7 +8,7 @@
 #include <SDL.h>
 #include "TextRenderer.hpp"
 #include "Z80Computer.hpp"
-
+//#include <CLI/CLI.hpp>
 
 #define FONT_FILE "../data/PxPlus_IBM_MDA.ttf"
 
@@ -330,6 +330,7 @@ int main_u(int argc, char** argv) {
     return 0;
 }
 
+#if 1
 int main(int argc, char** argv) {
     try {
         return main_u(argc, argv);
@@ -338,22 +339,25 @@ int main(int argc, char** argv) {
         return -1;
     }
 }
+#else
+int main() {
+    CLI::App app;
 
-// iconv na konverzi <0-0xff> -> unicode
-// https://unicode-org.github.io/icu/userguide/conversion/converters.html#modes-of-conversion
-// lib icu
+    bool test = false;
 
-//cp 852
-// ÇüéâäůćçłëŐőîŹÄĆÉĹĺôöĽľŚśÖÜŤťŁ×čáíóúĄąŽžĘę¬źČş«»░▒▓│┤ÁÂĚŞ╣║╗╝Żż┐└┴┬├─┼Ăă╚╔╩╦╠═╬¤đĐĎËďŇÍÎě┘┌█▄ŢŮ▀ÓßÔŃńňŠšŔÚŕŰýÝţ´
-// <SHY>
-// ˝˛ˇ˘§÷¸°¨˙űŘř■
-// <NBSP>
+    app.add_flag("-t,--test", test, "Testovací možnost");
 
-//const char* cp852upper = "ÇüéâäůćçłëŐőîŹÄĆÉĹĺôöĽľŚśÖÜŤťŁ×čáíóúĄąŽžĘę¬źČş«»░▒▓│┤ÁÂĚŞ╣║╗╝Żż┐└┴┬├─┼Ăă╚╔╩╦╠═╬¤đĐĎËďŇÍÎě┘┌█▄ŢŮ▀ÓßÔŃńňŠšŔÚŕŰýÝţ´ ˝˛ˇ˘§÷¸°¨˙űŘř■ ";
+    try {
+        app.parse();
+    } catch(const CLI::ParseError &e) {
+        return app.exit(e);
+    }
 
-/* https://en.wikipedia.org/wiki/Code_page_852
- * let tbl = document.querySelector("table.wikitable");
- * let chars = tbl.querySelectorAll("td > a");
- * let str = "";
- * chars.forEach(el=>{str+=el.innerHTML;});
- */
+    fmt::print("test: {}\n", test);
+
+    return 0;
+}
+#endif
+
+/// cp 852
+/// ÇüéâäůćçłëŐőîŹÄĆÉĹĺôöĽľŚśÖÜŤťŁ×čáíóúĄąŽžĘę¬źČş«»░▒▓│┤ÁÂĚŞ╣║╗╝Żż┐└┴┬├─┼Ăă╚╔╩╦╠═╬¤đĐĎËďŇÍÎě┘┌█▄ŢŮ▀ÓßÔŃńňŠšŔÚŕŰýÝţ´˝˛ˇ˘§÷¸°¨˙űŘř■

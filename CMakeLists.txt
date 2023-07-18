@@ -15,16 +15,19 @@ endforeach()
 
 add_definitions(-DSDL_MAIN_HANDLED)
 
-include_directories(${SDL2PP_INCLUDE_DIRS})
-target_link_libraries(z80sdl PRIVATE SDL2pp::SDL2pp)
-
 find_package(Freetype REQUIRED)
-target_link_libraries(z80sdl PRIVATE Freetype::Freetype)
-
 find_package(ICU COMPONENTS data uc i18n REQUIRED)
-target_link_libraries(z80sdl PRIVATE ICU::uc ICU::data)
 
-find_package(fmt REQUIRED)
-target_link_libraries(z80sdl PRIVATE fmt::fmt-header-only)
+set(LIBRARIES
+        SDL2pp::SDL2pp
+        Freetype::Freetype
+        ICU::uc
+        ICU::data
+        fmt::fmt-header-only
+        fpm
+        CLI11::CLI11
+)
 
-target_link_libraries(z80sdl PRIVATE fpm)
+foreach (lib ${LIBRARIES})
+    target_link_libraries(z80sdl PRIVATE ${lib})
+endforeach()
