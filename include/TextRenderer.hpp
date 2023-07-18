@@ -18,6 +18,10 @@ public:
         uint8_t as_byte;
 
         bool operator != (TextAttributes other) const;
+
+        TextAttributes() {};
+        TextAttributes(uint8_t byte) : as_byte(byte) {};
+        TextAttributes(const TextRenderer::TextAttributes& other) : as_byte(other.as_byte) {};
     };
 
     explicit TextRenderer(SDL_Renderer *output);
@@ -34,6 +38,7 @@ public:
 
     void makeCharAtlas(const char* filepath);
     void render();
+    void present();
 
     static constexpr int
         WIN_W = 792, WIN_H = 588,

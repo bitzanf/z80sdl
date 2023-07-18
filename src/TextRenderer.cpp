@@ -2,13 +2,15 @@
 // Created by Filip on 14.6.2023.
 //
 
-#include "TextRenderer.hpp"
+#include "../include/TextRenderer.hpp"
 #include <unicode/ucnv.h>
 
 bool TextRenderer::TextAttributes::operator != (const TextRenderer::TextAttributes other) const {
     return as_byte != other.as_byte;
 }
 
+#pragma clang diagnostic push
+#pragma ide diagnostic ignored "cppcoreguidelines-pro-type-member-init"
 TextRenderer::TextRenderer(SDL_Renderer *output)
     : outputRenderer(output)
     , frameBuffer(SDL_CreateRGBSurfaceWithFormat(0, WIN_W, WIN_H, 32, SDL_PIXELFORMAT_RGBA8888))
@@ -35,6 +37,7 @@ TextRenderer::TextRenderer(SDL_Renderer *output)
 
     memset(surfacePalette, 0, N_COLORS * sizeof(SDL_Color));
 }
+#pragma clang diagnostic pop
 
 TextRenderer::~TextRenderer() {
     delete[] surfacePalette;
@@ -82,7 +85,7 @@ std::u32string TextRenderer::codepageConvert() {
     const char *source, *sourceLimit;
 
     for (unsigned char c = 0; c < 0xff; c++) {
-        charsetStr[0] = c;
+        charsetStr[0] = c; // NOLINT(cppcoreguidelines-narrowing-conversions)
         source = charsetStr;
         sourceLimit = charsetStr + 1;
 
@@ -120,6 +123,10 @@ void TextRenderer::render() {
     }
 
     fbTex.Update(SDL2pp::NullOpt, frameBuffer);
+    present();
+}
+
+void TextRenderer::present() {
     outputRenderer.Clear();
     outputRenderer.Copy(fbTex);
 }
@@ -163,8 +170,8 @@ void TextRenderer::print(int line, int col, const std::string &str) {
 void TextRenderer::print(int line, int col, const std::string &str, TextRenderer::TextAttributes attr) {
     print(line, col, str);
     TextAttributes *attrBegin = &attrAt(line, col);
-    int length = std::min(str.length(), textBuffer.size() - (line * N_COLS + col));
-    for (int i = 0; i < length; i++) {
+    size_t length = std::min(str.length(), textBuffer.size() - (line * N_COLS + col));
+    for (size_t i = 0; i < length; i++) {
         attrBegin[i] = attr;
     }
 }

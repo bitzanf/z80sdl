@@ -1,132 +1,25 @@
 #include <iostream>
 #include <exception>
+#include <chrono>
+#include <fmt/format.h>
+#include <ft2build.h>
+#include FT_FREETYPE_H
+#include <unicode/ucnv.h>
 
 #define SDL_MAIN_HANDLED
 #include "TextRenderer.hpp"
 #include "Z80Computer.hpp"
 
-#include <chrono>
-#include <fmt/format.h>
 
-#include <ft2build.h>
-#include FT_FREETYPE_H
-//#include "SDL_syswm.h"
-
-//#define FONT_FILE R"(c:\Users\Filip\AppData\Local\Microsoft\Windows\Fonts\PxPlus_IBM_MDA.ttf)"
 #define FONT_FILE "../data/PxPlus_IBM_MDA.ttf"
-//#define FONT_FILE R"(c:\Windows\Fonts\Consola.ttf)"
-//#define FONT_FILE R"(c:\Windows\Fonts\seguiemj.ttf)"
 
-//#include <windows.h>
-/*#include <ShObjIdl.h>
-LOGFONTA getFontDialog();
-std::string callFileOpenDialog(const wchar_t* title, COMDLG_FILTERSPEC* fs = nullptr, int nFS = 0, const char* startPath = nullptr);*/
-
-// c:\Users\Filip\AppData\Local\Microsoft\Windows\Fonts\
-
-// https://github.com/libSDL2pp/libSDL2pp-tutorial
 using namespace SDL2pp;
 using namespace std::chrono;
 using std::string;
 
-const int FPS = 30;
+const int FPS = 20;
 const int msPerFrame = 1000 / FPS;
 
-/*
-    bool RctrlPressed = false, LctrlPressed = false, LshiftPressed = false, RshiftPressed = false;
-    while (true) {
-        auto startTime = steady_clock::now();
-        SDL_Event event;
-        while (SDL_PollEvent(&event)) {
-            switch (event.type) {
-                case SDL_QUIT:
-                    goto konec;
-                case SDL_KEYDOWN:
-                    switch (event.key.keysym.sym) {
-                        case SDLK_ESCAPE:
-                        case SDLK_q:
-                            goto konec;
-                        case SDLK_r:
-                            window.SetSize(640, 480);
-                            ftRenderer.resize(640, 480);
-                            fontSize = 16;
-                            break;
-                        case SDLK_LCTRL:
-                            LctrlPressed = true;
-                            break;
-                        case SDLK_RCTRL:
-                            RctrlPressed = true;
-                            break;
-                        case SDLK_LSHIFT:
-                            LshiftPressed = true;
-                            break;
-                        case SDLK_RSHIFT:
-                            RshiftPressed = true;
-                            break;
-                    }
-                    break;
-                case SDL_KEYUP:
-                    switch (event.key.keysym.sym) {
-                        case SDLK_LCTRL:
-                            LctrlPressed = false;
-                            break;
-                        case SDLK_RCTRL:
-                            RctrlPressed = false;
-                            break;
-                        case SDLK_LSHIFT:
-                            LshiftPressed = false;
-                            break;
-                        case SDLK_RSHIFT:
-                            RshiftPressed = false;
-                            break;
-                    }
-                case SDL_MOUSEWHEEL:
-                    if (LctrlPressed || RctrlPressed) {
-                        Point pt;
-                        if (event.wheel.y < 0 && fontSize > 1) {
-                            if (LshiftPressed || RshiftPressed) fontSize -= 2;
-                            else fontSize--;
-                            pt = ftRenderer.resizeText(fontSize);
-                            window.SetSize(pt);
-                        } else if (event.wheel.y > 0) {
-                            if (LshiftPressed || RshiftPressed) fontSize += 2;
-                            else fontSize++;
-                            pt = ftRenderer.resizeText(fontSize);
-                            window.SetSize(pt);
-                        }
-                    }
-                    break;
-                /*case SDL_SYSWMEVENT:
-                    SDL_SysWMmsg *msg = event.syswm.msg;
-                    if (msg->msg.win.msg == WM_COMMAND) {
-                        int id = LOWORD(msg->msg.win.wParam);
-                        if (id == 1) MessageBoxA(NULL, "Clicked 1", "menu click", MB_OK);
-                        else if (id == 2) MessageBoxA(NULL, "Clicked 2", "menu click", MB_OK);
-                    }
-                    break;*/
-                /*case SDL_WINDOWEVENT:
-                    if (event.window.event == SDL_WINDOWEVENT_SIZE_CHANGED) {
-                        ftRenderer.resize(event.window.data1, event.window.data2);
-                    }*//*
-            }
-        }
-
-        sdlRenderer.SetDrawColor(0, 0, 0);
-        sdlRenderer.Clear();
-        ftRenderer.render();
-        ftRenderer.present();
-        sdlRenderer.Present();
-
-        auto stopTime = steady_clock::now();
-        auto elapsedTime = duration_cast<milliseconds>(stopTime - startTime).count();
-        if (elapsedTime < msPerFrame) SDL_Delay(msPerFrame - elapsedTime);
-    }
-    konec:
-    return 0;
-}
-*/
-
-#include <unicode/ucnv.h>
 string UTF8Convert(const string &utf8txt) {
     UErrorCode err = U_ZERO_ERROR;
     auto detectFailure = [&err]{
@@ -205,7 +98,7 @@ Gauge(TextRenderer &renderer, int row, int col, const string &label, const strin
     string sLabel = "┤ " + label + " ├";
     string sValue = fmt::format("{:.{}g}", value, precision + nDigits10IntegerPart(value));
 
-    if (unit.length() > 0) sValue += ' ' + unit;
+    sValue += unit;
     const int valueLength = utf8length(sValue) + 2;
     const int fillLength = fill * 20;
 
@@ -398,7 +291,7 @@ void makeFancyShit(TextRenderer &renderer) {
         " PWR  ",
         " GOOD "
     };
-    renderStrArray<2>(renderer, 13, 40, str7u8, TextRenderer::TextAttributes{.as_byte = 0b11000000});
+    renderStrArray<2>(renderer, 13, 40, str7u8, 0b11000000);
 
     string str8[] = {
         "┌───────┬─────┤ CPU TEMP ├─────┐",
@@ -411,7 +304,7 @@ void makeFancyShit(TextRenderer &renderer) {
         "└───────┴─┬───┬───┬───┬───┬───┬┘",
         "          20  35  50  65  80  95 ",
     };
-    renderStrArray<9>(renderer, 19, 2, str8, TextRenderer::TextAttributes{.as_byte = 0b00000111});
+    renderStrArray<9>(renderer, 19, 2, str8, 0b00000111);
     for (int i = 12; i <= 31; i++) {
         renderer.attrAt(20, i).fgcolor = 0b0010;
         renderer.attrAt(25, i).fgcolor = 0b0100;
@@ -433,106 +326,41 @@ void makeFancyShit(TextRenderer &renderer) {
     }*/
 
     Gauge(renderer, 19, 40, "CPU TEMP", "°C", 20, 95, 46, 0, 4, 0b0010);
-    Gauge(renderer, 24, 40, "12V POWER", "V", 11, 13, 12.35, 0, 2, 0b0010);
-    Indicator(renderer, 13, 48, "COMP\nON", TextRenderer::TextAttributes{.as_byte = 0b10100000});
+    Gauge(renderer, 24, 40, "12V POWER", " V", 11, 13, 12.35, 0, 2, 0b0010);
+    Indicator(renderer, 13, 48, "COMP\nON", 0b10100000);
 }
 
-int main_u3(int argc, char** argv) {
-    SDL sdl(SDL_INIT_VIDEO);
+bool g_hasUART = false;
 
-    Window window(
-        "z80sdl",
-        SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED,
-        TextRenderer::WIN_W, TextRenderer::WIN_H,
-        //800,600,
-        SDL_WINDOW_SHOWN
-    );
-    Renderer sdlRenderer(
-        window,
-        -1,
-        SDL_RENDERER_ACCELERATED
-    );
-    TextRenderer textRenderer(sdlRenderer.Get());
+void drawUART(TextRenderer &renderer) {
+    using df = duration<float>;
 
-    sdlRenderer.SetDrawColor(0, 0, 0);
-    window.SetMinimumSize(TextRenderer::WIN_W, TextRenderer::WIN_H);
+    static auto time_start = steady_clock::now();
+    static bool isHBLit = false;
 
-    textRenderer.makeCharAtlas(FONT_FILE);
+    if (!g_hasUART) {
+        isHBLit = false;
+        renderer.print(-1, 0, UTF8Convert(" RS232 "), 0b01001111);
+        renderer.print(-1, 7, UTF8Convert("■"), 0b00010111);
+    } else {
+        auto rs232pos = &renderer.attrAt(-1, 0);
+        for (int i = 0; i < 7; i++) rs232pos[i].bgcolor = 0b0010;
 
-    int bufferSize = TextRenderer::N_LINES * TextRenderer::N_COLS;
-    //memset(&textRenderer.charAt(0, 0), '.', bufferSize);
-    strcpy(&textRenderer.charAt(1, 1), "ahoj svete");
-    strcpy(&textRenderer.charAt(0, 0), "Microsoft Windows [Version 10.0.19044.2846]");
-    memset(&textRenderer.attrAt(0, 0), 0b111, bufferSize);
-    //memset(&textRenderer.attrAt(0, 0), 0x67, bufferSize);
-    textRenderer.attrAt(1, 1).fgcolor = 0b1111;
-    textRenderer.attrAt(1, 2).as_byte = 0b01001101;
-    textRenderer.attrAt(1, 4).as_byte = 0b10101111;
-    strcpy(&textRenderer.charAt(-1, 0), "meow meow");
-    textRenderer.attrAt(-1, -1).bgcolor = 6;
-    textRenderer.attrAt(0, 0).bgcolor = 6;
-
-    auto bfr = &textRenderer.charAt(30, 0);
-    for (int i = 0; i < 256; i++) bfr[i] = i;
-
-    bfr = &textRenderer.charAt(35, 0);
-    auto abfr = &textRenderer.attrAt(35, 0);
-    for (int i = 0; i < 256; i++) {
-        bfr[i] = i;
-        abfr[i].bgcolor = 0b1100;
-        abfr[i].fgcolor = 0b1111;
-    }
-
-    for (int i = 15; i <= 17; i++) {
-        for (int j = 5; j <= 7; j++) {
-            textRenderer.charAt(i, j) = 0xB0;
-            textRenderer.attrAt(i, j).as_byte = 0b10011111;
+        auto& hbpos = renderer.attrAt(-1, 7);
+        auto now = steady_clock::now();
+        df s = now - time_start;
+        if (s.count() > 1) {
+            time_start = now;
+            if (isHBLit) hbpos.fgcolor = 0xf;
+            else hbpos.fgcolor = 0x7;
+            isHBLit = !isHBLit;
         }
     }
-
-    for (int i = 0; i < 8; i++) {
-        strcpy(&textRenderer.charAt(2, i * 10), "012345678 ");
-    }
-
-    makeFancyShit(textRenderer);
-
-    sdlRenderer.SetDrawColor(0, 0, 0);
-    sdlRenderer.Clear();
-    textRenderer.render();
-
-    while (true) {
-        auto startTime = steady_clock::now();
-        SDL_Event event;
-        while (SDL_PollEvent(&event)) {
-            switch (event.type) {
-                case SDL_QUIT:
-                    goto konec;
-                case SDL_KEYDOWN:
-                    switch (event.key.keysym.sym) {
-                        case SDLK_ESCAPE:
-                        case SDLK_q:
-                            goto konec;
-                        case SDLK_r:
-                            window.SetSize(640, 480);
-                            break;
-                    }
-                    break;
-            }
-        }
-
-        sdlRenderer.Present();
-
-        auto stopTime = steady_clock::now();
-        auto elapsedTime = duration_cast<milliseconds>(stopTime - startTime).count();
-        if (elapsedTime < msPerFrame) SDL_Delay(msPerFrame - elapsedTime);
-    }
-    konec:
-    return 0;
 }
 
 void drawUI(TextRenderer &renderer) {
-    renderer.print(0, 0, fmt::format("{:<{}}", "", TextRenderer::N_COLS), TextRenderer::TextAttributes{.as_byte=0b00011111});
-    renderer.print(0, 0, UTF8Convert(" Základní obrazovka "), TextRenderer::TextAttributes{.as_byte=0b10011111});
+    renderer.print(0, 0, fmt::format("{:<{}}", "", TextRenderer::N_COLS), 0b00011111);
+    renderer.print(0, 0, UTF8Convert(" Základní obrazovka "), 0b10011111);
     renderer.print(0, 20, UTF8Convert("│ Napájení │ Zatížení PC │ Intel PCM"));
 
     {
@@ -544,20 +372,27 @@ void drawUI(TextRenderer &renderer) {
         }
     }
 
-    Gauge(renderer, 2, 2, "TEPLOTA CPU", "°C", 20, 95, 46, 0, 4, 0b0010);
-    Gauge(renderer, 7, 2, "TEPLOTA GPU", "°C", 20, 95, 80, 0, 4, 0b0100);
-    Gauge(renderer, 12, 2, "TEPLOTA VODY", "°C", 20, 60, 30, 0, 4, 0b0010);
-    Gauge(renderer, 2, 40, "PRŮTOK CPU", "l/min", 0, 10, 7.62, 1, 4, 0b0010);
-    Gauge(renderer, 7, 40, "PRŮTOK GPU", "l/min", 0, 10, 6, 0, 4, 0b0010);
+    Gauge(renderer, 2, 2, "TEPLOTA CPU", " °C", 20, 95, 46, 0, 4, 0b0010);
+    Gauge(renderer, 7, 2, "TEPLOTA GPU", " °C", 20, 95, 80, 0, 4, 0b0100);
+    Gauge(renderer, 12, 2, "TEPLOTA VODY", " °C", 20, 60, 30, 0, 4, 0b0010);
+    Gauge(renderer, 2, 40, "PRŮTOK CPU", " l/m", 0, 10, 7.62, 1, 4, 0b0010);
+    Gauge(renderer, 7, 40, "PRŮTOK GPU", " l/m", 0, 10, 6, 0, 4, 0b0010);
     Gauge(renderer, 12, 40, "VENTILÁTOR", "", 0, 3000, 1337, 0, 1, 0b0010);
 
-    Indicator(renderer, 20, 2, "PC\nZAP", TextRenderer::TextAttributes{.as_byte = 0b11000000});
-    Indicator(renderer, 20, 10, "ČERP\n1", TextRenderer::TextAttributes{.as_byte = 0b10100000});
-    Indicator(renderer, 20, 18, "ČERP\n2", TextRenderer::TextAttributes{.as_byte = 0b00000111/*0b01110000*/});
-    Indicator(renderer, 20, 26, "PWR\nGOOD", TextRenderer::TextAttributes{.as_byte = 0b10100000});
+    renderer.print(18, 0, UTF8Convert(fmt::format("{:<{}}", "", TextRenderer::N_COLS)), 0b00010111);
 
-    renderer.print(-1, 0, fmt::format("{:<{}}", "", TextRenderer::N_COLS), TextRenderer::TextAttributes{.as_byte=0b00011111});
-    renderer.print(-1, 0, UTF8Convert(" RS232 "), TextRenderer::TextAttributes{.as_byte=0b01001111});
+    Indicator(renderer, 20, 2, "PC\nZAP", 0b11000000);
+    Indicator(renderer, 20, 10, "ČERP\n1", 0b10100000);
+    Indicator(renderer, 20, 18, "ČERP\n2", 0b00000111/*0b01110000*/);
+    Indicator(renderer, 20, 26, "PWR\nGOOD", 0b10100000);
+
+    renderer.print(20, 40, "        ", 0b10100000);
+    renderer.print(21, 40, UTF8Convert(" ČERP 1 "), 0b10100000);
+    renderer.print(22, 40, "        ", 0b10100000);
+
+    renderer.print(-1, 8, fmt::format("{:<{}}", "", TextRenderer::N_COLS-8), 0b00011111);
+
+    drawUART(renderer);
 }
 
 int main_u(int argc, char** argv) {
@@ -567,7 +402,7 @@ int main_u(int argc, char** argv) {
         "z80sdl",
         SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED,
         TextRenderer::WIN_W, TextRenderer::WIN_H,
-        SDL_WINDOW_SHOWN
+        SDL_WINDOW_SHOWN | SDL_WINDOW_RESIZABLE
     );
     Renderer sdlRenderer(
         window,
@@ -602,13 +437,19 @@ int main_u(int argc, char** argv) {
                         case SDLK_q:
                             goto konec;
                         case SDLK_r:
-                            window.SetSize(640, 480);
+                            window.SetSize(TextRenderer::WIN_W, TextRenderer::WIN_H);
+                            break;
+                        case SDLK_SPACE:
+                            g_hasUART = !g_hasUART;
                             break;
                     }
                     break;
             }
         }
 
+        drawUI(textRenderer);
+        textRenderer.render();
+        //textRenderer.present();
         sdlRenderer.Present();
 
         auto stopTime = steady_clock::now();
