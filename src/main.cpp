@@ -15,6 +15,7 @@
 using namespace SDL2pp;
 using namespace std::chrono;
 using std::string;
+using fmt::format;
 
 const int FPS = 20;
 const int msPerFrame = 1000 / FPS;
@@ -92,15 +93,15 @@ int nDigits10IntegerPart(float num) {
     else return 1;
 }
 
+/*
+ ┌───────┬─────┤ CPU TEMP ├─────┐
+ │ 46 °C │ ███████              │
+ └───────┴─┬───┬───┬───┬───┬───┬┘
+           20  35  50  65  80  95
+ */
 void
 Gauge(TextRenderer &renderer, int row, int col, const string &label, const string &unit, float valueMin, float valueMax,
       float value, int precision, int gradeTicks, uint8_t color) {
-    /*
-     ┌───────┬─────┤ CPU TEMP ├─────┐
-     │ 46 °C │ ███████              │
-     └───────┴─┬───┬───┬───┬───┬───┬┘
-               20  35  50  65  80  95
-     */
     const float range = valueMax - valueMin;
     float fill;
     if (value <= valueMin) fill = 0;
@@ -110,7 +111,7 @@ Gauge(TextRenderer &renderer, int row, int col, const string &label, const strin
     const float step = range / (gradeTicks + 1);
 
     string sLabel = "┤ " + label + " ├";
-    string sValue = fmt::format("{:.{}g}{}", value, precision + nDigits10IntegerPart(value), unit);
+    string sValue = format("{:.{}g}{}", value, precision + nDigits10IntegerPart(value), unit);
 
     const int valueLength = utf8length(sValue) + 2;
     const int fillLength = fill * 20;
@@ -129,14 +130,14 @@ Gauge(TextRenderer &renderer, int row, int col, const string &label, const strin
 
     if (gradeTicks == 0) {
         sGradation.reserve(gradationLength * 4);
-        for (int i = 0; i < gradationLength; i++) sGradation.append("─");
+        for (int i = 0; i < gradationLength; i++) sGradation += "─";
 
         ///TODO: dodelat
     }
     else {
         string gradationInfill;
         gradationInfill.reserve(gradationSpacingLength * 4);
-        for (int i = 0; i < gradationSpacingLength; i++) gradationInfill.append("─");
+        for (int i = 0; i < gradationSpacingLength; i++) gradationInfill += "─";
 
         for (int i = 0; i < gradeTicks; i++) {
             sGradation.append(gradationInfill);
@@ -144,7 +145,7 @@ Gauge(TextRenderer &renderer, int row, int col, const string &label, const strin
         }
 
         int sGradationLength = utf8length(sGradation);
-        while (sGradationLength++ < gradationLength) sGradation.append("─");
+        while (sGradationLength++ < gradationLength) sGradation += "─";
 
         /*std::vector<int> tickPositions;
         tickPositions.push_back(valueLength + 3);
@@ -162,8 +163,8 @@ Gauge(TextRenderer &renderer, int row, int col, const string &label, const strin
             else if (roundf(f) == f) numberPrecision = 0;
             else numberPrecision = remainingNumberLength;*/
 
-            //number = fmt::format("{:.{}f}", f, numberPrecision);
-            number = fmt::format("{:.{}g}", f, precision + nDigits10IntegerPart(f));
+            //number = format("{:.{}f}", f, numberPrecision);
+            number = format("{:.{}g}", f, precision + nDigits10IntegerPart(f));
             sGradationNumbers.append(number);
             if (i < gradationVecLength - 1) {
                 const int numberLength = utf8length(number);
@@ -173,10 +174,10 @@ Gauge(TextRenderer &renderer, int row, int col, const string &label, const strin
     }
 
     string output[4] = {
-        fmt::format("┌{:─<{}}┬─{:─^20}─┐", "", valueLength, sLabel),
-        fmt::format("│{: ^{}}│ {:█<{}}{: <{}} │", sValue, valueLength, "", fillLength, "", 20 - fillLength),
-        fmt::format("└{:─<{}}┴─┬{}┬┘", "", valueLength, sGradation),
-        fmt::format("{: <{}}{}", "", valueLength + 3, sGradationNumbers)
+        format("┌{:─<{}}┬─{:─^20}─┐", "", valueLength, sLabel),
+        format("│{: ^{}}│ {:█<{}}{: <{}} │", sValue, valueLength, "", fillLength, "", 20 - fillLength),
+        format("└{:─<{}}┴─┬{}┬┘", "", valueLength, sGradation),
+        format("{: <{}}{}", "", valueLength + 3, sGradationNumbers)
 
     };
 
@@ -198,7 +199,7 @@ void Indicator(TextRenderer &renderer, int row, int col, const string& label, Te
 
     for (int i = row; i < row + 2; i++) {
         for (int j = col; j < col + 6; j++) renderer.attrAt(i, j) = attrs;
-        strcpy(&renderer.charAt(i, col), fmt::format("{:^6}", lines[i - row]).c_str());
+        strcpy(&renderer.charAt(i, col), format("{:^6}", lines[i - row]).c_str());
     }
 }
 
@@ -232,7 +233,7 @@ void drawUART(TextRenderer &renderer) {
 }
 
 void drawUI(TextRenderer &renderer) {
-    renderer.print(0, 0, fmt::format("{:<{}}", "", TextRenderer::N_COLS), 0b00011111);
+    renderer.print(0, 0, format("{:<{}}", "", TextRenderer::N_COLS), 0b00011111);
     renderer.print(0, 0, converter(" Základní obrazovka "), 0b10011111);
     renderer.print(0, 20, converter("│ Napájení │ Zatížení PC │ Intel PCM"));
 
@@ -252,14 +253,14 @@ void drawUI(TextRenderer &renderer) {
     Gauge(renderer, 7, 40, "PRŮTOK GPU", " l/m", 0, 10, 6, 0, 4, 0b0010);
     Gauge(renderer, 12, 40, "VENTILÁTOR", "", 0, 3000, 1337, 0, 1, 0b0010);
 
-    renderer.print(18, 0, converter(fmt::format("{:<{}}", "", TextRenderer::N_COLS)), 0b00010111);
+    renderer.print(18, 0, converter(format("{:<{}}", "", TextRenderer::N_COLS)), 0b00010111);
 
     Indicator(renderer, 20, 2, "PC\nZAP", 0b11000000);
     Indicator(renderer, 20, 10, "ČERP\n1", 0b10100000);
     Indicator(renderer, 20, 18, "ČERP\n2", 0b00000111/*0b01110000*/);
     Indicator(renderer, 20, 26, "PWR\nGOOD", 0b10100000);
 
-    renderer.print(-1, 0, fmt::format("{:<{}}", "", TextRenderer::N_COLS), 0b00011111);
+    renderer.print(-1, 0, format("{:<{}}", "", TextRenderer::N_COLS), 0b00011111);
     renderer.print(-1, 0, converter(" RS232 "), 0b01001111);
     //renderer.print(-1, 7, converter("■"), 0b00010111);
 
@@ -353,7 +354,7 @@ int main() {
         return app.exit(e);
     }
 
-    fmt::print("test: {}\n", test);
+    print("test: {}\n", test);
 
     return 0;
 }

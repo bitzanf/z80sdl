@@ -24,6 +24,12 @@ public:
         TextAttributes(const TextRenderer::TextAttributes& other) : as_byte(other.as_byte) {};
     };
 
+    struct RawInfo {
+        char* text;
+        TextAttributes* attrs;
+        int size;
+    };
+
     explicit TextRenderer(SDL_Renderer *output);
     ~TextRenderer();
 
@@ -33,8 +39,7 @@ public:
     void print(int line, int col, const std::string &str);
     void print(int line, int col, const std::string &str, TextAttributes attr);
 
-    char* charBfrRaw();
-    TextAttributes* attrBfrRaw();
+    RawInfo getRawInfo();
 
     void makeCharAtlas(const char* filepath);
     void render();

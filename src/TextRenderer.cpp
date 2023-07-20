@@ -180,19 +180,11 @@ void TextRenderer::drawBitmap(FT_Bitmap bitmap, int x, int y) {
     bm.Blit(SDL2pp::NullOpt, textAtlas, dstrect);
 }
 
-char *TextRenderer::charBfrRaw() {
-    return textBuffer.data();
-}
-
-TextRenderer::TextAttributes *TextRenderer::attrBfrRaw() {
-    return attrBuffer.data();
-}
-
 void TextRenderer::print(int line, int col, const std::string &str) {
     strncpy(&charAt(line, col), str.c_str(), std::min(str.length(), textBuffer.size() - (line * N_COLS + col)));
 }
 
-void TextRenderer::print(int line, int col, const std::string &str, TextRenderer::TextAttributes attr) {
+void TextRenderer::print(int line, int col, const std::string &str, const TextRenderer::TextAttributes attr) {
     print(line, col, str);
     TextAttributes *attrBegin = &attrAt(line, col);
     size_t length = std::min(str.length(), textBuffer.size() - (line * N_COLS + col));
@@ -211,4 +203,12 @@ SDL_Color TextRenderer::interpolateColor(SDL_Color from, SDL_Color to, float per
     out.a = from.a + (to.a - from.a) * percent;
 
     return out;
+}
+
+TextRenderer::RawInfo TextRenderer::getRawInfo() {
+    return RawInfo {
+        .text = textBuffer.data(),
+        .attrs = attrBuffer.data(),
+        .size = N_LINES * N_COLS
+    };
 }

@@ -11,7 +11,8 @@ Z80Computer::Z80Computer(const std::string& serialPort) :
         ROM(new uint8_t[0x8000]),
         videoTextRAM(nullptr),
         videoAttrRAM(nullptr),
-        videoRAMSize(0) {
+        videoRAMSize(0),
+        videoRAMDirty(nullptr) {
     cpu.setupCallbackFP(cpu_read, cpu_write, cpu_in, cpu_out);
 }
 
@@ -30,7 +31,10 @@ uint8_t Z80Computer::cpu_read(void *arg, uint16_t addr) {
 void Z80Computer::cpu_write(void *arg, uint16_t addr, uint8_t val) {
     auto self = (Z80Computer*)arg;
     uint8_t *ptr = self->addr2ptr(addr);
-    if (ptr) *ptr = val;
+    if (ptr) {
+        *ptr = val;
+        if (self->videoRAMDirty != nullptr && addr >= 0x8000 && addr < 0xA000) *self->videoRAMDirty = true;
+    }
 }
 
 uint8_t Z80Computer::cpu_in(void *arg, uint16_t port) {

@@ -31,6 +31,8 @@ public:
     uint8_t *getROM();
     void setVideoRAM(uint8_t *text, uint8_t *attr, uint16_t size);
 
+    bool *videoRAMDirty;
+
 private:
     static uint8_t cpu_read(void *arg, uint16_t addr);
     static void cpu_write(void *arg, uint16_t addr, uint8_t val);
