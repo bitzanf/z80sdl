@@ -46,8 +46,8 @@ public:
     void present();
 
     static constexpr int
-        WIN_W = 792, WIN_H = 588,
-        N_LINES = 42, N_COLS = 88;
+        WIN_W = 1024, WIN_H = 768,
+        N_LINES = WIN_H/16, N_COLS = WIN_W/8;
 
 private:
     static int atlasPosition(uint8_t c);
@@ -66,10 +66,9 @@ private:
     SDL2pp::Texture fbTex;
 
     SDL_Color colorPalette[16];
-    SDL_Color *surfacePalette;
 
     static constexpr int
-        FONT_W = 9, FONT_H = 14,
+        FONT_W = 8, FONT_H = 16,
         FONT_SIZE = 16, N_COLORS = 256;
     static constexpr const char* CODEPAGE = "cp852";
 };

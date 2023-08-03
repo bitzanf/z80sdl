@@ -16,7 +16,6 @@ TextRenderer::TextRenderer(SDL_Renderer *output)
     , frameBuffer(SDL_CreateRGBSurfaceWithFormat(0, WIN_W, WIN_H, 32, SDL_PIXELFORMAT_RGBA8888))
     , fbTex(outputRenderer, frameBuffer)
     , textAtlas(0, 256 * FONT_W, FONT_H, 8, 0, 0, 0, 0)
-    , surfacePalette(new SDL_Color[N_COLORS])
 {
     textBuffer.resize(N_LINES * N_COLS);
     attrBuffer.resize(N_LINES * N_COLS);
@@ -34,14 +33,10 @@ TextRenderer::TextRenderer(SDL_Renderer *output)
         colorPalette[i].b = (i & 0b001) ? 0xff : 0;
         colorPalette[i].a = 0xff;
     }
-
-    memset(surfacePalette, 0, N_COLORS * sizeof(SDL_Color));
 }
 #pragma clang diagnostic pop
 
-TextRenderer::~TextRenderer() {
-    delete[] surfacePalette;
-}
+TextRenderer::~TextRenderer() = default;
 
 char& TextRenderer::charAt(int line, int col) {
     if (line < 0) line = N_LINES + line;
@@ -109,7 +104,7 @@ void TextRenderer::drawChar(ftpp::FTFace &font, char32_t c, int x) {
     font.loadGlyph(idx, FT_LOAD_DEFAULT);
 
     xpos = x + glyphSlot->bitmap_left;
-    ypos = FONT_H - glyphSlot->bitmap_top - 3;
+    ypos = FONT_H - glyphSlot->bitmap_top - 4;  //we love magic constants
     font.renderGlyph(FT_RENDER_MODE_NORMAL);
     drawBitmap(glyphSlot->bitmap, xpos, ypos);
 }

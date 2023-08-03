@@ -10,7 +10,7 @@
 #include "Z80Computer.hpp"
 //#include <CLI/CLI.hpp>
 
-#define FONT_FILE "../data/PxPlus_IBM_MDA.ttf"
+#define FONT_FILE "../data/PxPlus_IBM_VGA_8x16.ttf"
 
 using namespace SDL2pp;
 using namespace std::chrono;
@@ -284,13 +284,14 @@ int main_u(int argc, char** argv) {
     TextRenderer textRenderer(sdlRenderer.Get());
 
     sdlRenderer.SetDrawColor(0, 0, 0);
-    window.SetMinimumSize(TextRenderer::WIN_W, TextRenderer::WIN_H);
+    //window.SetMinimumSize(TextRenderer::WIN_W, TextRenderer::WIN_H);
 
     textRenderer.makeCharAtlas(FONT_FILE);
 
     int bufferSize = TextRenderer::N_LINES * TextRenderer::N_COLS;
     memset(&textRenderer.attrAt(0, 0), 0b111, bufferSize);
 
+    bool isFullScreen = false;
     while (true) {
         auto startTime = steady_clock::now();
         SDL_Event event;
@@ -310,6 +311,9 @@ int main_u(int argc, char** argv) {
                             g_hasUART = !g_hasUART;
                             g_UIRedraw = true;
                             break;
+                        case SDLK_f:
+                            isFullScreen = !isFullScreen;
+                            window.SetFullscreen(isFullScreen ? SDL_WINDOW_FULLSCREEN_DESKTOP : 0);
                     }
                     break;
             }

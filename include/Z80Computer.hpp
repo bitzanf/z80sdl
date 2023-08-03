@@ -10,16 +10,16 @@
 #include "ICs/Intel8251.hpp"
 
 /*
- * ------ MEMORY MAP ------
+ * ---- MEMORY MAP ----
  * 0x0000:0x7FFF ROM
- * 0x8000:0x8FFF video TEXT
- * 0x9000:0x9FFF video ATTR
- * 0xA000:0xFFFF RAM
- * ------------------------
+ * 0x8000:0x97FF VRAM
+ * 0x9800:0xFFFF RAM
+ * --------------------
  *
- * -------- IO MAP --------
- * 0 idk
- * ------------------------
+ * ------ IO MAP ------
+ * 0 VRAM bank switch
+ *   (0=text; 1=attr)
+ * --------------------
  */
 
 class Z80Computer {
@@ -46,6 +46,7 @@ private:
 
     uint8_t *RAM, *ROM, *videoTextRAM, *videoAttrRAM;
     uint16_t videoRAMSize;
+    bool videoAttrBankSwitch = false;
 };
 
 
