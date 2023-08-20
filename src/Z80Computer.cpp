@@ -76,3 +76,7 @@ uint8_t *Z80Computer::addr2ptr(uint16_t addr) {
 
     return nullptr;
 }
+
+int Z80Computer::runCycles(int cycles) {
+    return cpu.execute(cycles);
+}

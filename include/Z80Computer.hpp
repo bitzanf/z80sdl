@@ -33,6 +33,8 @@ public:
 
     bool *videoRAMDirty;
 
+    int runCycles(int cycles);
+
 private:
     static uint8_t cpu_read(void *arg, uint16_t addr);
     static void cpu_write(void *arg, uint16_t addr, uint8_t val);

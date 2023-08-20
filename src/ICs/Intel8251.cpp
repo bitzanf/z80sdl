@@ -12,7 +12,7 @@
 #pragma ide diagnostic ignored "cppcoreguidelines-pro-type-member-init"
 Intel8251::Intel8251(const std::string &mountpoint) {
     mount.open(mountpoint);
-    if (mount.fail()) throw std::runtime_error(strerror(errno));
+    if (mount.fail()) throw std::runtime_error(std::string("Intel8251 error: ") + strerror(errno));
     reset();
     status.DSR = true;
 }

@@ -12,13 +12,15 @@
 
 #define FONT_FILE "../data/PxPlus_IBM_VGA_8x16.ttf"
 
-using namespace SDL2pp;
+#define CPU_FREQ_HZ 10'000'000
+#define CPU_EXEC_INTERVAL_MS 100
+#define RENDER_INTERVAL_MS 50
+
+#if 0
+
 using namespace std::chrono;
 using std::string;
 using fmt::format;
-
-const int FPS = 20;
-const int msPerFrame = 1000 / FPS;
 
 class UTF8_CP852_Converter {
 public:
@@ -268,15 +270,15 @@ void drawUI(TextRenderer &renderer) {
 }
 
 int main_u(int argc, char** argv) {
-    SDL sdl(SDL_INIT_VIDEO);
+    SDL2pp::SDL sdl(SDL_INIT_VIDEO);
 
-    Window window(
+    SDL2pp::Window window(
         "z80sdl",
         SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED,
         TextRenderer::WIN_W, TextRenderer::WIN_H,
         SDL_WINDOW_SHOWN | SDL_WINDOW_RESIZABLE
     );
-    Renderer sdlRenderer(
+    SDL2pp::Renderer sdlRenderer(
         window,
         -1,
         SDL_RENDERER_ACCELERATED
@@ -329,11 +331,84 @@ int main_u(int argc, char** argv) {
 
         auto stopTime = steady_clock::now();
         auto elapsedTime = duration_cast<milliseconds>(stopTime - startTime).count();
-        if (elapsedTime < msPerFrame) SDL_Delay(msPerFrame - elapsedTime);
+        if (elapsedTime < RENDER_INTERVAL_MS) SDL_Delay(RENDER_INTERVAL_MS - elapsedTime);
     }
     konec:
     return 0;
 }
+#else
+
+bool isRunning = true;
+
+uint32_t CPU_EXEC_callback(uint32_t interval, void* param) {
+    if (!isRunning) return 0;
+    auto computer = (Z80Computer*)param;
+
+    computer->runCycles(CPU_FREQ_HZ/CPU_EXEC_INTERVAL_MS);
+    return CPU_EXEC_INTERVAL_MS;
+}
+
+int main_u(int argc, char** argv) {
+    SDL2pp::SDL sdl(SDL_INIT_VIDEO | SDL_INIT_TIMER);
+
+    SDL2pp::Window window(
+            "z80sdl",
+            SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED,
+            TextRenderer::WIN_W, TextRenderer::WIN_H,
+            SDL_WINDOW_SHOWN | SDL_WINDOW_RESIZABLE
+    );
+    SDL2pp::Renderer sdlRenderer(
+            window,
+            -1,
+            SDL_RENDERER_ACCELERATED
+    );
+    TextRenderer textRenderer(sdlRenderer.Get());
+
+    Z80Computer computer("./uart_pipe");
+
+    sdlRenderer.SetDrawColor(0, 0, 0);
+    textRenderer.makeCharAtlas(FONT_FILE);
+
+    bool videoRAMDirty = true;
+    auto vram = textRenderer.getRawInfo();
+    computer.setVideoRAM((uint8_t*)vram.text, (uint8_t*)vram.attrs, vram.size);
+    computer.videoRAMDirty = &videoRAMDirty;
+
+    SDL_TimerID cpuTimer = SDL_AddTimer(CPU_EXEC_INTERVAL_MS, CPU_EXEC_callback, &computer);
+    if (cpuTimer == 0) throw SDL2pp::Exception("SDL_AddTimer (cpu)");
+
+    bool isFullScreen = false;
+    while (isRunning) {
+        SDL_Event event;
+        if (SDL_WaitEventTimeout(&event, RENDER_INTERVAL_MS) != 0) {
+            switch (event.type) {
+                case SDL_QUIT:
+                    isRunning = false;
+                    break;
+                case SDL_KEYDOWN:
+                    switch (event.key.keysym.sym) {
+                        case SDLK_ESCAPE:
+                        case SDLK_q:
+                            isRunning = false;
+                            break;
+                        case SDLK_r:
+                            window.SetSize(TextRenderer::WIN_W, TextRenderer::WIN_H);
+                            break;
+                        case SDLK_f:
+                            isFullScreen = !isFullScreen;
+                            window.SetFullscreen(isFullScreen ? SDL_WINDOW_FULLSCREEN_DESKTOP : 0);
+                    }
+                    break;
+            }
+        }
+        if (videoRAMDirty) textRenderer.render();
+        else textRenderer.present();
+        sdlRenderer.Present();
+        videoRAMDirty = false;
+    }
+    return 0;
+}
+#endif
 
 #if 1
 int main(int argc, char** argv) {

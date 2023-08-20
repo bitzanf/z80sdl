@@ -3,7 +3,7 @@ project(z80sdl)
 
 set(CMAKE_CXX_STANDARD 20)
 
-add_executable(z80sdl src/main.cpp include/FTWrapper.hpp src/FTWrapper.cpp src/Z80Computer.cpp include/Z80Computer.hpp include/Z80Computer.hpp include/ICs/z80.hpp src/TextRenderer.cpp include/TextRenderer.hpp src/ICs/Intel8251.cpp include/ICs/Intel8251.hpp src/ICs/FPU.cpp include/ICs/FPU.hpp src/CallBackTimer.cpp include/CallBackTimer.hpp)
+add_executable(z80sdl src/main.cpp include/FTWrapper.hpp src/FTWrapper.cpp src/Z80Computer.cpp include/Z80Computer.hpp include/Z80Computer.hpp include/ICs/z80.hpp src/TextRenderer.cpp include/TextRenderer.hpp src/ICs/Intel8251.cpp include/ICs/Intel8251.hpp src/ICs/FPU.cpp include/ICs/FPU.hpp)
 
 target_include_directories(z80sdl PRIVATE "include")
 
@@ -31,3 +31,5 @@ set(LIBRARIES
 foreach (lib ${LIBRARIES})
     target_link_libraries(z80sdl PRIVATE ${lib})
 endforeach()
+
+add_subdirectory(z80)
