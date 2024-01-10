@@ -16,7 +16,7 @@
 #define CPU_EXEC_INTERVAL_MS 100
 #define RENDER_INTERVAL_MS 50
 
-#if 0
+#if 1
 
 using namespace std::chrono;
 using std::string;
@@ -113,7 +113,7 @@ Gauge(TextRenderer &renderer, int row, int col, const string &label, const strin
     const float step = range / (gradeTicks + 1);
 
     string sLabel = "┤ " + label + " ├";
-    string sValue = format("{:.{}g}{}", value, precision + nDigits10IntegerPart(value), unit);
+    string sValue = fmt::format("{:.{}g}{}", value, precision + nDigits10IntegerPart(value), unit);
 
     const int valueLength = utf8length(sValue) + 2;
     const int fillLength = fill * 20;
@@ -176,10 +176,10 @@ Gauge(TextRenderer &renderer, int row, int col, const string &label, const strin
     }
 
     string output[4] = {
-        format("┌{:─<{}}┬─{:─^20}─┐", "", valueLength, sLabel),
-        format("│{: ^{}}│ {:█<{}}{: <{}} │", sValue, valueLength, "", fillLength, "", 20 - fillLength),
-        format("└{:─<{}}┴─┬{}┬┘", "", valueLength, sGradation),
-        format("{: <{}}{}", "", valueLength + 3, sGradationNumbers)
+        fmt::format("┌{:─<{}}┬─{:─^20}─┐", "", valueLength, sLabel),
+        fmt::format("│{: ^{}}│ {:█<{}}{: <{}} │", sValue, valueLength, "", fillLength, "", 20 - fillLength),
+        fmt::format("└{:─<{}}┴─┬{}┬┘", "", valueLength, sGradation),
+        fmt::format("{: <{}}{}", "", valueLength + 3, sGradationNumbers)
 
     };
 
@@ -201,7 +201,7 @@ void Indicator(TextRenderer &renderer, int row, int col, const string& label, Te
 
     for (int i = row; i < row + 2; i++) {
         for (int j = col; j < col + 6; j++) renderer.attrAt(i, j) = attrs;
-        strcpy(&renderer.charAt(i, col), format("{:^6}", lines[i - row]).c_str());
+        strcpy(&renderer.charAt(i, col), fmt::format("{:^6}", lines[i - row]).c_str());
     }
 }
 
@@ -265,6 +265,13 @@ void drawUI(TextRenderer &renderer) {
     renderer.print(-1, 0, format("{:<{}}", "", TextRenderer::N_COLS), 0b00011111);
     renderer.print(-1, 0, converter(" RS232 "), 0b01001111);
     //renderer.print(-1, 7, converter("■"), 0b00010111);
+
+    char* begintxt = &renderer.charAt(25, 0);
+    TextRenderer::TextAttributes* attrbegin = &renderer.attrAt(25, 0);
+    for (int i = 0; i < 0xFF; i++) {
+        begintxt[i] = i;
+        attrbegin[i].as_byte = 0b0111;
+    }
 
     drawUART(renderer);
 }

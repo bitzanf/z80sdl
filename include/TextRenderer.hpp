@@ -52,8 +52,8 @@ public:
 private:
     static int atlasPosition(uint8_t c);
     static std::u32string codepageConvert();
-    void drawChar(ftpp::FTFace &font, char32_t c, int x);
-    void drawBitmap(FT_Bitmap bitmap, int x, int y);
+    static void drawChar(ftpp::FTFace &font, SDL2pp::Surface &atlas, char32_t c, int x);
+    static void drawBitmap(FT_Bitmap bitmap, SDL2pp::Surface &atlas, int x, int y);
     void renderChar(char c, int row, int col, TextAttributes attr);
 
     static SDL_Color interpolateColor(SDL_Color from, SDL_Color to, float percent);
@@ -62,8 +62,10 @@ private:
     std::vector<TextAttributes> attrBuffer;
 
     SDL2pp::Renderer outputRenderer;
-    SDL2pp::Surface textAtlas, frameBuffer;
+    SDL2pp::Surface frameBuffer;
     SDL2pp::Texture fbTex;
+
+    std::vector<float> textAtlasNormalized;
 
     SDL_Color colorPalette[16];
 

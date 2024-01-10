@@ -15,7 +15,6 @@ TextRenderer::TextRenderer(SDL_Renderer *output)
     : outputRenderer(output)
     , frameBuffer(SDL_CreateRGBSurfaceWithFormat(0, WIN_W, WIN_H, 32, SDL_PIXELFORMAT_RGBA8888))
     , fbTex(outputRenderer, frameBuffer)
-    , textAtlas(0, 256 * FONT_W, FONT_H, 8, 0, 0, 0, 0)
 {
     textBuffer.resize(N_LINES * N_COLS);
     attrBuffer.resize(N_LINES * N_COLS);
@@ -59,8 +58,15 @@ void TextRenderer::makeCharAtlas(const char *filepath) {
     ftpp::FTFace font{lib, filepath};
     font.setPixelSizes(FONT_SIZE);
 
+    SDL2pp::Surface textAtlas(0, 256 * FONT_W, FONT_H, 8, 0, 0, 0, 0);
     auto charset = codepageConvert();
-    for (int i = 0; i < 256; i++) drawChar(font, charset[i], atlasPosition(i));
+    for (int i = 0; i < 256; i++) drawChar(font, textAtlas, charset[i], atlasPosition(i));
+
+    auto atlasPX = static_cast<uint8_t*>(textAtlas.Get()->pixels);
+    textAtlasNormalized.resize(textAtlas.GetWidth() * textAtlas.GetHeight());
+    for (int i = 0; i < textAtlasNormalized.size(); i++) {
+        textAtlasNormalized[i] = atlasPX[i] / 255.0f;
+    }
 }
 
 std::u32string TextRenderer::codepageConvert() {
@@ -95,7 +101,7 @@ std::u32string TextRenderer::codepageConvert() {
     return result;
 }
 
-void TextRenderer::drawChar(ftpp::FTFace &font, char32_t c, int x) {
+void TextRenderer::drawChar(ftpp::FTFace &font, SDL2pp::Surface &atlas, char32_t c, int x) {
     FT_GlyphSlot glyphSlot = font->glyph;
     int xpos, ypos;
 
@@ -106,7 +112,7 @@ void TextRenderer::drawChar(ftpp::FTFace &font, char32_t c, int x) {
     xpos = x + glyphSlot->bitmap_left;
     ypos = FONT_H - glyphSlot->bitmap_top - 4;  //we love magic constants
     font.renderGlyph(FT_RENDER_MODE_NORMAL);
-    drawBitmap(glyphSlot->bitmap, xpos, ypos);
+    drawBitmap(glyphSlot->bitmap, atlas, xpos, ypos);
 }
 
 void TextRenderer::render() {
@@ -128,7 +134,7 @@ void TextRenderer::present() {
 
 void TextRenderer::renderChar(char c, int row, int col, TextRenderer::TextAttributes attr) {
 #if 1
-    auto atlasPX = (uint8_t*)textAtlas.Get()->pixels;
+    auto atlasPX = (float*)textAtlasNormalized.data();
     auto fbPX = (uint32_t*)frameBuffer.Get()->pixels;
 
     static const size_t c_fb_pxPerLine = FONT_W * N_COLS;
@@ -145,7 +151,7 @@ void TextRenderer::renderChar(char c, int row, int col, TextRenderer::TextAttrib
     for (int i = 0; i < FONT_H; i++) {
         for (int j = 0; j < FONT_W; j++) {
             idx = c_ta_hpos + j + i * c_ta_pxPerLine;
-            SDL_Color color = interpolateColor(colorPalette[attr.bgcolor], colorPalette[attr.fgcolor], atlasPX[idx]/255.0f);
+            SDL_Color color = interpolateColor(colorPalette[attr.bgcolor], colorPalette[attr.fgcolor], atlasPX[idx]);
 
             idx = c_fb_offset + i * c_fb_pxPerLine + j;
             //fbPX[idx] = SDL_MapRGBA(format, color.r, color.g, color.b, color.a);
@@ -165,14 +171,14 @@ void TextRenderer::renderChar(char c, int row, int col, TextRenderer::TextAttrib
 #endif
 }
 
-void TextRenderer::drawBitmap(FT_Bitmap bitmap, int x, int y) {
+void TextRenderer::drawBitmap(FT_Bitmap bitmap, SDL2pp::Surface &atlas, int x, int y) {
     if (bitmap.width == 0 || bitmap.rows == 0) return;
-    if (bitmap.width + x > textAtlas.GetWidth() || bitmap.rows + y > textAtlas.GetHeight()) return;
+    if (bitmap.width + x > atlas.GetWidth() || bitmap.rows + y > atlas.GetHeight()) return;
 
     SDL2pp::Rect dstrect{ x, y, (int)bitmap.width, (int)bitmap.rows };
 
     SDL2pp::Surface bm { bitmap.buffer, (int)bitmap.width, (int)bitmap.rows, 8, bitmap.pitch, 0, 0, 0, 0 };
-    bm.Blit(SDL2pp::NullOpt, textAtlas, dstrect);
+    bm.Blit(SDL2pp::NullOpt, atlas, dstrect);
 }
 
 void TextRenderer::print(int line, int col, const std::string &str) {

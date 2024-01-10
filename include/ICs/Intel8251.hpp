@@ -7,6 +7,7 @@
 
 #include <string>
 #include <fstream>
+#include <cstdint>
 
 //https://map.grauw.nl/resources/midi/intel_8251.pdf
 
